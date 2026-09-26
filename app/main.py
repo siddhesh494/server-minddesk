@@ -101,9 +101,14 @@ def create_app(
         lifespan=lifespan,
     )
 
+    origins = settings.cors_origin_list
+    # Browsers reject Access-Control-Allow-Origin: * together with credentials.
+    # Reflect the request Origin so CORS_ORIGINS=* allows every site.
+    allow_all_origins = origins == ["*"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
+        allow_origins=[] if allow_all_origins else origins,
+        allow_origin_regex=".*" if allow_all_origins else None,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
