@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.main import create_app
+from app.integrations.whatsapp.client import FakeWhatsAppClient
 from tests.fakes import FakeBusinessChatModel, FakeDatabase, FakeEmbeddings, FakePineconeIndex
 
 
@@ -27,6 +28,10 @@ def settings() -> Settings:
         retrieval_top_k=5,
         min_score=0.0,
         cors_origins="http://localhost:5173",
+        whatsapp_api_version="v21.0",
+        whatsapp_verify_token="test-verify-token",
+        whatsapp_access_token="test-whatsapp-token",
+        whatsapp_app_secret="test-app-secret",
     )
 
 
@@ -41,7 +46,17 @@ def app_db() -> FakeDatabase:
 
 
 @pytest.fixture
-def client(settings: Settings, app_db: FakeDatabase, pinecone_index: FakePineconeIndex) -> TestClient:
+def whatsapp_client() -> FakeWhatsAppClient:
+    return FakeWhatsAppClient()
+
+
+@pytest.fixture
+def client(
+    settings: Settings,
+    app_db: FakeDatabase,
+    pinecone_index: FakePineconeIndex,
+    whatsapp_client: FakeWhatsAppClient,
+) -> TestClient:
     application = create_app(
         settings,
         testing=True,
@@ -49,6 +64,7 @@ def client(settings: Settings, app_db: FakeDatabase, pinecone_index: FakePinecon
         embeddings=FakeEmbeddings(settings),
         pinecone_index=pinecone_index,
         llm=FakeBusinessChatModel(),
+        whatsapp_client=whatsapp_client,
     )
     with TestClient(application) as test_client:
         yield test_client

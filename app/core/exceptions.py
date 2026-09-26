@@ -64,3 +64,23 @@ class LLMError(AppError):
 class ChatError(AppError):
     def __init__(self, message: str = "Chat request failed") -> None:
         super().__init__("CHAT_ERROR", message, 502)
+
+
+class WhatsAppBusinessNotFoundError(AppError):
+    def __init__(self, message: str = "No MindDesk business is connected to this WhatsApp number") -> None:
+        super().__init__("WHATSAPP_BUSINESS_NOT_FOUND", message, 404)
+
+
+class WhatsAppConflictError(AppError):
+    def __init__(self, message: str = "This WhatsApp number is already connected to another business") -> None:
+        super().__init__("WHATSAPP_CONFLICT", message, 409)
+
+
+class WhatsAppSendError(AppError):
+    def __init__(self, message: str = "Unable to send the WhatsApp message") -> None:
+        super().__init__("WHATSAPP_SEND_FAILED", message, 502)
+
+
+class WhatsAppWebhookForbiddenError(AppError):
+    def __init__(self, message: str = "WhatsApp webhook verification failed") -> None:
+        super().__init__("WHATSAPP_WEBHOOK_FORBIDDEN", message, 403)

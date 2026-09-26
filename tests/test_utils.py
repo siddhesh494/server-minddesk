@@ -19,6 +19,10 @@ def test_mask_phone_number_hides_prefix() -> None:
     assert mask_phone_number("+919876543210") == "***3210"
 
 
+def test_normalize_phone_number_accepts_whatsapp_wa_id() -> None:
+    assert normalize_phone_number("919876543210") == "919876543210"
+
+
 def test_build_namespace_is_pinecone_safe() -> None:
     namespace = build_namespace("550e8400-e29b-41d4-a716-446655440000", 3)
     assert namespace == "550e8400-e29b-41d4-a716-446655440000--v3"

@@ -18,6 +18,9 @@ from app.api.businesses import router as businesses_router
 from app.api.chat import router as chat_router
 from app.api.index import router as index_router
 from app.api.verify import router as verify_router
+from app.api.whatsapp import router as whatsapp_router
+from app.api.webhooks.whatsapp import router as whatsapp_webhook_router
+from app.integrations.whatsapp.client import FakeWhatsAppClient, WhatsAppClient
 from app.core.config import Settings, get_settings
 from app.core.exceptions import AppError
 from app.core.logging import configure_logging, get_logger
@@ -43,6 +46,7 @@ def create_app(
     pinecone_index: Any = None,
     llm: Any = None,
     checkpointer: Any = None,
+    whatsapp_client: Any = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     if testing:
@@ -61,6 +65,7 @@ def create_app(
             app.state.pinecone_index = pinecone_index
             app.state.llm = llm
             app.state.checkpointer = checkpointer or memory_manager.initialize(settings, testing=True)
+            app.state.whatsapp_client = whatsapp_client or FakeWhatsAppClient()
             await ensure_indexes(app.state.db)
             _bind_agent(app)
             logger.info("application_started", env="test")
@@ -74,9 +79,13 @@ def create_app(
         app.state.embeddings = embeddings or create_embedding_provider(settings)
         app.state.llm = llm or create_chat_model(settings)
         app.state.checkpointer = checkpointer or memory_manager.initialize(settings, testing=False)
+        app.state.whatsapp_client = whatsapp_client or WhatsAppClient(settings)
         _bind_agent(app)
         logger.info("application_started", env=settings.app_env)
         yield
+        client = getattr(app.state, "whatsapp_client", None)
+        if client is not None and hasattr(client, "aclose"):
+            await client.aclose()
         memory_manager.close()
         await mongo_manager.close()
         logger.info("application_stopped")
@@ -85,7 +94,8 @@ def create_app(
         title="MindDesk",
         description=(
             "Admin APIs index business knowledge into a shared Pinecone index. "
-            "Public `/api/chat` answers customer questions from the matching business UUID only."
+            "Public `/api/chat` and the WhatsApp Cloud API webhook both call the same ChatService. "
+            "Customers are answered from the matching business UUID only."
         ),
         version="1.0.0",
         lifespan=lifespan,
@@ -160,6 +170,8 @@ def create_app(
     app.include_router(index_router, prefix=prefix)
     app.include_router(chat_router, prefix=prefix)
     app.include_router(businesses_router, prefix=prefix)
+    app.include_router(whatsapp_router, prefix=prefix)
+    app.include_router(whatsapp_webhook_router, prefix=prefix)
 
     @app.get("/health", tags=["System"], summary="Liveness probe")
     async def health() -> dict[str, str]:

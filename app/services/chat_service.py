@@ -16,43 +16,63 @@ class ChatService:
         self.businesses = businesses
         self.agent = agent
 
-    async def chat(self, *, uuid: str, phone: str, query: str) -> dict[str, str]:
-        logger.info("chat_request_started", phone=mask_phone_number(phone))
+    async def process_message(
+        self,
+        *,
+        business_uuid: str,
+        phone_number: str,
+        user_query: str,
+        channel: str = "api",
+    ) -> dict[str, str]:
+        """Channel-agnostic conversation entry used by REST chat and WhatsApp."""
+        logger.info(
+            "chat_request_started",
+            channel=channel,
+            phone=mask_phone_number(phone_number),
+        )
         try:
-            business_uuid = parse_uuid(uuid)
+            parsed_uuid = parse_uuid(business_uuid)
         except ValueError as exc:
             raise BusinessNotFoundError() from exc
 
-        if not phone.strip():
+        if not phone_number.strip():
             raise InvalidRequestError("A phone number is required")
-        if not query.strip():
+        if not user_query.strip():
             raise InvalidRequestError("A query is required")
 
-        business = await self.businesses.get_by_uuid(business_uuid)
+        business = await self.businesses.get_by_uuid(parsed_uuid)
         if business is None:
             raise BusinessNotFoundError()
         if business.status != "active" or not business.active_namespace:
             raise BusinessNotActiveError()
 
-        logger.info("business_resolved", business_uuid=business_uuid)
-        thread_id = build_thread_id(phone, business_uuid)
-        logger.info("thread_id_created")
+        logger.info("business_resolved", business_uuid=parsed_uuid, channel=channel)
+        thread_id = build_thread_id(phone_number, parsed_uuid)
+        logger.info("thread_id_created", channel=channel)
 
         context = BusinessContext(
-            business_uuid=business_uuid,
+            business_uuid=parsed_uuid,
             active_namespace=business.active_namespace,
-            user_phone_number=phone,
+            user_phone_number=phone_number,
             system_prompt=resolve_system_prompt(business.system_prompt),
         )
         answer = await invoke_agent(
             self.agent,
-            query=query.strip(),
+            query=user_query.strip(),
             thread_id=thread_id,
             context=context,
         )
-        logger.info("chat_request_completed", business_uuid=business_uuid)
+        logger.info("chat_request_completed", business_uuid=parsed_uuid, channel=channel)
         return {
-            "uuid": business_uuid,
+            "uuid": parsed_uuid,
             "thread_id": thread_id,
             "answer": answer,
         }
+
+    async def chat(self, *, uuid: str, phone: str, query: str, channel: str = "api") -> dict[str, str]:
+        return await self.process_message(
+            business_uuid=uuid,
+            phone_number=phone,
+            user_query=query,
+            channel=channel,
+        )

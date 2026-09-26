@@ -20,4 +20,7 @@ async def ensure_indexes(db: Any) -> None:
         await db["agent_checkpoint_writes"].create_index("thread_id", unique=True)
     except Exception:
         logger.warning("conversation_indexes_not_unique_yet")
+    await db["whatsapp_integrations"].create_index("business_uuid", unique=True)
+    await db["whatsapp_integrations"].create_index("phone_number_id", unique=True)
+    await db["whatsapp_messages"].create_index("message_id", unique=True)
     logger.info("mongo_indexes_ensured")

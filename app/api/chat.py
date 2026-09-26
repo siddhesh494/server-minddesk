@@ -18,9 +18,10 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         businesses=BusinessRepository(request.app.state.db),
         agent=request.app.state.agent,
     )
-    result = await service.chat(
-        uuid=payload.uuid,
-        phone=payload.user_phone_number,
-        query=payload.user_query,
+    result = await service.process_message(
+        business_uuid=payload.uuid,
+        phone_number=payload.user_phone_number,
+        user_query=payload.user_query,
+        channel="api",
     )
     return ChatResponse(**result)

@@ -21,6 +21,13 @@ SENSITIVE_KEYS = {
     "groq_api_key",
     "mongodb_uri",
     "mongo_uri",
+    "whatsapp_access_token",
+    "whatsapp_app_secret",
+    "whatsapp_verify_token",
+    "whatsapp_encryption_key",
+    "encrypted_access_token",
+    "app_secret",
+    "verify_token",
 }
 
 

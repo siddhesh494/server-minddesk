@@ -69,6 +69,16 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_api_key: str = ""
 
+    whatsapp_api_version: str = "v21.0"
+    whatsapp_verify_token: str = ""
+    whatsapp_access_token: str = ""
+    whatsapp_app_secret: str = ""
+    whatsapp_business_account_id: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_webhook_base_url: str = ""
+    whatsapp_encryption_key: str = ""
+    whatsapp_api_timeout_seconds: float = 20.0
+
     @field_validator("chunk_overlap")
     @classmethod
     def overlap_must_be_smaller(cls, value: int, info) -> int:

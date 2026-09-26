@@ -76,6 +76,8 @@ class FakeCollection:
             raise DuplicateKeyError("email")
         if "uuid" in stored and any(doc.get("uuid") == stored["uuid"] for doc in self.docs):
             raise DuplicateKeyError("uuid")
+        if "message_id" in stored and any(doc.get("message_id") == stored["message_id"] for doc in self.docs):
+            raise DuplicateKeyError("message_id")
         stored.setdefault("_id", ObjectId())
         self.docs.append(stored)
         return FakeInsertOneResult(stored["_id"])

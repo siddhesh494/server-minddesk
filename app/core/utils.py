@@ -11,8 +11,24 @@ PHONE_DIGITS_RE = re.compile(r"\D+")
 
 
 def normalize_phone_number(phone: str) -> str:
-    """Keep digits only so +91 9876543210 and 919876543210 share a thread."""
-    return PHONE_DIGITS_RE.sub("", phone or "")
+    """Normalize phones so API chat, WhatsApp, and thread IDs stay aligned.
+
+    Prefer libphonenumber when the value is a valid international number.
+    Otherwise keep digits only so +91 9876543210 and 919876543210 match.
+    """
+    raw = (phone or "").strip()
+    if not raw:
+        return ""
+    try:
+        import phonenumbers
+
+        candidate = raw if raw.startswith("+") else f"+{PHONE_DIGITS_RE.sub('', raw)}"
+        parsed = phonenumbers.parse(candidate, None)
+        if phonenumbers.is_valid_number(parsed):
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164).lstrip("+")
+    except Exception:
+        pass
+    return PHONE_DIGITS_RE.sub("", raw)
 
 
 def build_thread_id(phone: str, business_uuid: str) -> str:
@@ -45,6 +61,15 @@ def mask_phone_number(phone: str) -> str:
     if len(digits) < 4:
         return "***"
     return f"***{digits[-4:]}"
+
+
+def mask_display_phone_number(phone: str) -> str:
+    digits = normalize_phone_number(phone)
+    if len(digits) >= 12 and digits.startswith("91"):
+        return f"+91 XXXXX {digits[-4:]}"
+    if len(digits) < 4:
+        return "***"
+    return f"+{digits[:-4]} XXXX {digits[-4:]}" if len(digits) > 8 else f"***{digits[-4:]}"
 
 
 def hash_identifier(value: str) -> str:

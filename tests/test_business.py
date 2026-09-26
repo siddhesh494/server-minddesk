@@ -29,7 +29,7 @@ def test_create_and_list_business(client: TestClient) -> None:
     detail = client.get(f"/api/businesses/{uuid}", headers=headers)
     assert detail.status_code == 200
     assert detail.json()["plain_text"].startswith("ABC Electronics")
-    assert "customer-facing assistant" in detail.json()["system_prompt"]
+    assert "warm, short, and natural" in detail.json()["system_prompt"]
 
 
 def test_custom_system_prompt_is_stored_per_business(client: TestClient) -> None:
